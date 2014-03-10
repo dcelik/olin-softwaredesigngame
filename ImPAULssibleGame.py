@@ -14,16 +14,16 @@ import time
 class BrickBreakerModel:
     """ This class encodes the game state """
     def __init__(self):
-        self.bricks = []
-        for x in range(10,530,110):
-            for y in range(10,440,30):
-                brick = Brick((random.randint(0,255),random.randint(0,255),random.randint(0,255)),20,100,x,y)
-                self.bricks.append(brick)
+        self.walls = []
+        wallleft = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),640,10,0,0)
+        wallright = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),640,10,630,0)
+        self.walls.append(wallleft)
+        self.walls.append(wallright)
         self.paddle = Paddle((random.randint(0,255),random.randint(0,255),random.randint(0,255)),20,100,200,450)
     def update(self):
         self.paddle.update()
 
-class Brick:
+class Wall:
     """ Encodes the state of a brick in the game """
     def __init__(self,color,height,width,x,y):
         self.color = color
@@ -53,9 +53,8 @@ class PyGameWindowView:
         self.screen = screen
     def draw(self):
         self.screen.fill(pygame.Color(0,0,0))
-        print len(self.model.bricks)
-        for brick in self.model.bricks:
-            pygame.draw.rect(self.screen, pygame.Color(brick.color[0],brick.color[1],brick.color[2]),pygame.Rect(brick.x,brick.y,brick.width,brick.height))            
+        for wall in self.model.walls:
+            pygame.draw.rect(self.screen, pygame.Color(wall.color[0],wall.color[1],wall.color[2]),pygame.Rect(wall.x,wall.y,wall.width,wall.height))            
         pygame.draw.rect(self.screen, pygame.Color(self.model.paddle.color[0],self.model.paddle.color[1],self.model.paddle.color[2]),pygame.Rect(self.model.paddle.x,self.model.paddle.y,self.model.paddle.width,self.model.paddle.height))
         pygame.display.update()
 
@@ -87,8 +86,8 @@ if __name__ == '__main__':
 
     model  = BrickBreakerModel()
     view = PyGameWindowView(model,screen)
-    #controller = PyGameKeyboardController(model)
-    controller = PyGameMouseController(model)    
+    controller = PyGameKeyboardController(model)
+    #controller = PyGameMouseController(model)    
     
     running = True
 
