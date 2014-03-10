@@ -14,12 +14,17 @@ import time
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 SPEED = 2
+LIVES = 3
 
 class BrickBreakerModel:
     """ This class encodes the game state """
     def __init__(self):
         self.all_sprite_list = pygame.sprite.Group()
         self.wall_list = pygame.sprite.Group()
+        self.wall_list_vert = pygame.sprite.Group()
+        self.wall_list_horz = pygame.sprite.Group()
+        self.ball_list = pygame.sprite.Group()
+        
         wallleft = Wall(SCREEN_HEIGHT,10,0,0)
         wallright = Wall(SCREEN_HEIGHT,10,SCREEN_WIDTH-10,0)
         walltop = Wall(10,SCREEN_WIDTH,0,0)
@@ -27,18 +32,44 @@ class BrickBreakerModel:
         
         self.wall_list.add(wallleft)
         self.all_sprite_list.add(wallleft)
+        self.wall_list_vert.add(wallleft)
+        
         self.wall_list.add(wallright)
         self.all_sprite_list.add(wallright)
+        self.wall_list_vert.add(wallright)
+        
         self.wall_list.add(walltop)
         self.all_sprite_list.add(walltop)
+        self.wall_list_horz.add(walltop)
+        
         self.wall_list.add(wallbot)
         self.all_sprite_list.add(wallbot)
+        self.wall_list_horz.add(wallbot)
+                
+        ball = Ball(random.randint(200,SCREEN_WIDTH-200),random.randint(200,SCREEN_HEIGHT-200))
+        self.ball_list.add(ball)
+        self.all_sprite_list.add(ball)
+        ball.wallshorz = self.wall_list_horz
+        ball.wallsvert = self.wall_list_vert
+        
+        ball = Ball(random.randint(200,SCREEN_WIDTH-200),random.randint(200,SCREEN_HEIGHT-200))
+        self.ball_list.add(ball)
+        self.all_sprite_list.add(ball)
+        ball.wallshorz = self.wall_list_horz
+        ball.wallsvert = self.wall_list_vert
+        
+        ball = Ball(random.randint(200,SCREEN_WIDTH-200),random.randint(200,SCREEN_HEIGHT-200))
+        self.ball_list.add(ball)
+        self.all_sprite_list.add(ball)
+        ball.wallshorz = self.wall_list_horz
+        ball.wallsvert = self.wall_list_vert
         
         self.player = Player(SCREEN_HEIGHT/2,SCREEN_HEIGHT/2)
         self.player.walls = self.wall_list
+        self.player.balls = self.ball_list
         self.all_sprite_list.add(self.player) 
     def update(self):
-        self.player.update()
+#        self.player.update()
         self.all_sprite_list.update()
 
 class Wall(pygame.sprite.Sprite):
@@ -57,6 +88,7 @@ class Player(pygame.sprite.Sprite):
     change_x = 0
     change_y = 0
     walls = None
+    balls = None
     # -- Methods
     # Constructor function
     def __init__(self,x,y):
@@ -99,8 +131,52 @@ class Player(pygame.sprite.Sprite):
                 self.rect.bottom = block.rect.top
             else:
                 self.rect.top = block.rect.bottom
-    
-    
+                
+        block_hit_list = pygame.sprite.spritecollide(self, self.balls, False)
+        for block in block_hit_list:
+            global LIVES
+            LIVES+=-1
+            sound = pygame.mixer.Sound('Paul_Hit.ogg')
+            sound.play(0)
+            block.rect.x = -1000 #random.randint(200,SCREEN_WIDTH-200)
+            block.rect.y = -1000 #random.randint(200,SCREEN_HEIGHT-200)
+class Ball(pygame.sprite.Sprite):
+    # -- Attributes
+    # Set speed vector
+    velx = random.randint(1,3)
+    vely = random.randint(1,3)
+    player = None
+    wallsvert = None
+    wallshorz = None
+    # -- Methods
+    # Constructor function
+    def __init__(self,x,y):
+        # Call the parent's constructor
+        pygame.sprite.Sprite.__init__(self)
+        # Set height, width
+        paul = pygame.image.load('Paulinvert.png')
+        paul = paul.convert_alpha()
+        self.image = paul
+        #Make our top-left corner the passed-in location.
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.speed = [self.velx,self.vely]
+    def update(self):
+        
+        # Did this update cause us to hit a wall?
+        block_hit_list = pygame.sprite.spritecollide(self, self.wallsvert, False)
+        if len(block_hit_list)>0:
+           for block in block_hit_list:
+               self.speed[0] = -self.speed[0]
+        
+        block_hit_list = pygame.sprite.spritecollide(self, self.wallshorz, False)
+        if len(block_hit_list)>0:        
+            for block in block_hit_list:
+                self.speed[1] = -self.speed[1]
+
+        self.rect.y += self.speed[1]
+        self.rect.x += self.speed[0]
     
 
 class Portal:
@@ -168,34 +244,47 @@ class PyGameMouseController:
 
 if __name__ == '__main__':
     pygame.init()
-
+    global LIVES
     size = (SCREEN_WIDTH,SCREEN_HEIGHT)
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('The ImPAULssible Game')
     
     model  = BrickBreakerModel()
-#    view = PyGameWindowView(model,screen)
     controller = PyGameKeyboardController(model)
 #    controller = PyGameMouseController(model)    
     
+    pygame.mixer.music.load('Paul_Mixdown.ogg')
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(1.0)
+    
     running = True
-
+    ball = 0
     while running:
+        if LIVES <=0:
+            running = False
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
             if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
                 controller.handle_keyboard_event(event)
             if event.type == KEYUP:
                 controller.handle_keyboard_event(event)
 #            if event.type == MOUSEMOTION:
 #                controller.handle_mouse_event(event)
-#        
+#
         model.update()
         screen.fill((0,0,0))
         model.all_sprite_list.draw(screen)
         pygame.display.flip()
-        #view.draw()
         time.sleep(.001)
-
+        ball+=1
+        if ball == 3000:
+            ball = Ball(random.randint(200,SCREEN_WIDTH-200),random.randint(200,SCREEN_HEIGHT-200))
+            ball.wallshorz = model.wall_list_horz
+            ball.wallsvert = model.wall_list_vert
+            model.ball_list.add(ball)
+            model.all_sprite_list.add(ball)
+            ball = 0
     pygame.quit()
