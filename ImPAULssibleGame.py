@@ -11,56 +11,98 @@ import random
 import math
 import time
 
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+SPEED = 2
+
 class BrickBreakerModel:
     """ This class encodes the game state """
     def __init__(self):
         self.all_sprite_list = pygame.sprite.Group()
         self.wall_list = pygame.sprite.Group()
-        wallleft = Wall(640,10,0,0)
-        wallright = Wall(640,10,630,0)
-        walltop = Wall(10,640,)
-        wall_list.add(wall)
-        all_sprite_list.add(wall)
+        wallleft = Wall(SCREEN_HEIGHT,10,0,0)
+        wallright = Wall(SCREEN_HEIGHT,10,SCREEN_WIDTH-10,0)
+        walltop = Wall(10,SCREEN_WIDTH,0,0)
+        wallbot = Wall(10,SCREEN_WIDTH,0,SCREEN_HEIGHT-10)
         
+        self.wall_list.add(wallleft)
+        self.all_sprite_list.add(wallleft)
+        self.wall_list.add(wallright)
+        self.all_sprite_list.add(wallright)
+        self.wall_list.add(walltop)
+        self.all_sprite_list.add(walltop)
+        self.wall_list.add(wallbot)
+        self.all_sprite_list.add(wallbot)
         
-        
-        self.walls = []
-        wallleft = Wall(,640,10,0,0)
-        wallright = Wall(40,10,630,0)
-        walltop = Wall(10,640,0,0)
-        wallbot = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),10,640,0,630)        
-        self.walls.append(wallleft)
-        self.walls.append(wallright)
-        self.walls.append(walltop)
-        self.walls.append(wallbot)
-        self.paddle = Paddle((random.randint(0,255),random.randint(0,255),random.randint(0,255)),20,100,200,450)
+        self.player = Player(SCREEN_HEIGHT/2,SCREEN_HEIGHT/2)
+        self.player.walls = self.wall_list
+        self.all_sprite_list.add(self.player) 
     def update(self):
-        self.paddle.update()
+        self.player.update()
+        self.all_sprite_list.update()
 
 class Wall(pygame.sprite.Sprite):
     """ Encodes the state of a brick in the game """
     def __init__(self,height,width,x,y):
         pygame.sprite.Sprite.__init__(self)
-        self.color = (255,255,255)
-        self.height = height
-        self.width = width
-        self.x = x
-        self.y = y
+        self.image = pygame.Surface([width,height])
+        self.image.fill((255,255,255))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
         
-class Paddle:
-    """ Encodes the state of the paddle in the game"""
-    def __init__(self,color,height,width,x,y):
-        self.color = color
-        self.height = height
-        self.width = width
-        self.x = x
-        self.y = y
-        self.vx = 0.0
-        self.vy = 0.0
-
+class Player(pygame.sprite.Sprite):
+    # -- Attributes
+    # Set speed vector
+    change_x = 0
+    change_y = 0
+    walls = None
+    # -- Methods
+    # Constructor function
+    def __init__(self,x,y):
+        # Call the parent's constructor
+        pygame.sprite.Sprite.__init__(self)
+        # Set height, width
+        paul = pygame.image.load('Paul.png')
+        paul = paul.convert_alpha()
+        self.image = paul
+        #Make our top-left corner the passed-in location.
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+    # Change the speed of the player
+    def changespeed(self,x,y):
+        self.change_x += x
+        self.change_y += y
+        # Find a new position for the player
     def update(self):
-        """ Update the state of the paddle """
-        self.x += self.vx
+        self.rect.x += self.change_x
+        
+        # Did this update cause us to hit a wall?
+        block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
+        for block in block_hit_list:
+            # If we are moving right, set our right side to the left side of the item we hit
+            if self.change_x > 0:
+                self.rect.right = block.rect.left
+            else:
+                # Otherwise if we are moving left, do the opposite.
+                self.rect.left = block.rect.right
+                
+        # Move up/down
+        self.rect.y += self.change_y
+        
+        # Check and see if we hit anything
+        block_hit_list = pygame.sprite.spritecollide(self, self.walls, False)
+        for block in block_hit_list:
+            # Reset our position based on the top/bottom of the object.
+            if self.change_y > 0:
+                self.rect.bottom = block.rect.top
+            else:
+                self.rect.top = block.rect.bottom
+    
+    
+    
+
 class Portal:
     """ Encodes the state of the portal in the game"""
     def __init__(self,color,height,width,x,y,vx,vy):
@@ -90,20 +132,30 @@ class PyGameWindowView:
         pygame.display.update()
 
 class PyGameKeyboardController:
+    
     def __init__(self,model):
         self.model = model
         
     def handle_keyboard_event(self,event):
-        if event.type != KEYDOWN:
-            return
-        if event.key == pygame.K_LEFT:
-            self.model.paddle.vx +=-1.0
-        if event.key == pygame.K_RIGHT:
-            self.model.paddle.vx +=1.0
-        if event.key == pygame.K_DOWN:
-            self.model.paddle.vy +=1.0
-        if event.key == pygame.K_UP:
-            self.model.paddle.vy +=-1.0
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                self.model.player.changespeed(-SPEED,0)
+            elif event.key == pygame.K_RIGHT:
+                self.model.player.changespeed(SPEED,0)
+            elif event.key == pygame.K_UP:
+                self.model.player.changespeed(0,-SPEED)
+            elif event.key == pygame.K_DOWN:
+                self.model.player.changespeed(0,SPEED)
+    # Reset speed when key goes up
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                self.model.player.changespeed(SPEED,0)
+            elif event.key == pygame.K_RIGHT:
+                self.model.player.changespeed(-SPEED,0)
+            elif event.key == pygame.K_UP:
+                self.model.player.changespeed(0,SPEED)
+            elif event.key == pygame.K_DOWN:
+                self.model.player.changespeed(0,-SPEED)
             
 class PyGameMouseController:
     def __init__(self,model):
@@ -111,20 +163,20 @@ class PyGameMouseController:
 
     def handle_mouse_event(self,event):
          if event.type ==MOUSEMOTION:
-             self.model.paddle.x =event.pos[0]-self.model.paddle.width
-             self.model.paddle.y =event.pos[1]-self.model.paddle.height
+             self.model.player.rect.x =event.pos[0]
+             self.model.player.rect.y =event.pos[1]
 
 if __name__ == '__main__':
     pygame.init()
 
-    size = (640,640)
+    size = (SCREEN_WIDTH,SCREEN_HEIGHT)
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('The ImPAULssible Game)
+    pygame.display.set_caption('The ImPAULssible Game')
     
     model  = BrickBreakerModel()
-    view = PyGameWindowView(model,screen)
-#    controller = PyGameKeyboardController(model)
-    controller = PyGameMouseController(model)    
+#    view = PyGameWindowView(model,screen)
+    controller = PyGameKeyboardController(model)
+#    controller = PyGameMouseController(model)    
     
     running = True
 
@@ -132,12 +184,18 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
-#            if event.type == KEYDOWN:
-#                controller.handle_keyboard_event(event)
-            if event.type == MOUSEMOTION:
-                controller.handle_mouse_event(event)
+            if event.type == KEYDOWN:
+                controller.handle_keyboard_event(event)
+            if event.type == KEYUP:
+                controller.handle_keyboard_event(event)
+#            if event.type == MOUSEMOTION:
+#                controller.handle_mouse_event(event)
+#        
         model.update()
-        view.draw()
+        screen.fill((0,0,0))
+        model.all_sprite_list.draw(screen)
+        pygame.display.flip()
+        #view.draw()
         time.sleep(.001)
 
     pygame.quit()
