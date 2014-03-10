@@ -50,8 +50,22 @@ class Paddle:
     def update(self):
         """ Update the state of the paddle """
         self.x += self.vx
+class Portal:
+    """ Encodes the state of the portal in the game"""
+    def __init__(self,color,height,width,x,y,vx,vy):
+        self.color = color
+        self.height = height
+        self.width = width
+        self.x = x
+        self.y = y
+        self.vx = vx
+        self.vy = vy
+
+    def update(self):
+        """ Update the state of the portal """
+        self.x += self.vx
         self.y += self.vy
-        
+
 class PyGameWindowView:
     """ A view of brick breaker rendered in a Pygame window"""
     def __init__(self,model,screen):
