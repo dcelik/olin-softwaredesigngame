@@ -14,10 +14,20 @@ import time
 class BrickBreakerModel:
     """ This class encodes the game state """
     def __init__(self):
+        self.all_sprite_list = pygame.sprite.Group()
+        self.wall_list = pygame.sprite.Group()
+        wallleft = Wall(640,10,0,0)
+        wallright = Wall(640,10,630,0)
+        walltop = Wall(10,640,)
+        wall_list.add(wall)
+        all_sprite_list.add(wall)
+        
+        
+        
         self.walls = []
-        wallleft = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),640,10,0,0)
-        wallright = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),640,10,630,0)
-        walltop = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),10,640,0,0)
+        wallleft = Wall(,640,10,0,0)
+        wallright = Wall(40,10,630,0)
+        walltop = Wall(10,640,0,0)
         wallbot = Wall((random.randint(0,255),random.randint(0,255),random.randint(0,255)),10,640,0,630)        
         self.walls.append(wallleft)
         self.walls.append(wallright)
@@ -27,9 +37,10 @@ class BrickBreakerModel:
     def update(self):
         self.paddle.update()
 
-class Wall:
+class Wall(pygame.sprite.Sprite):
     """ Encodes the state of a brick in the game """
-    def __init__(self,color,height,width,x,y):
+    def __init__(self,height,width,x,y):
+        pygame.sprite.Sprite.__init__(self)
         self.color = (255,255,255)
         self.height = height
         self.width = width
@@ -108,7 +119,8 @@ if __name__ == '__main__':
 
     size = (640,640)
     screen = pygame.display.set_mode(size)
-
+    pygame.display.set_caption('The ImPAULssible Game)
+    
     model  = BrickBreakerModel()
     view = PyGameWindowView(model,screen)
 #    controller = PyGameKeyboardController(model)
